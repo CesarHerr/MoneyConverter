@@ -1,0 +1,40 @@
+---
+openapi: 3.0.1
+info:
+  title: API V1
+  version: v1
+paths:
+  "/api/v1/money_conversions":
+    post:
+      summary: Convierte monedas usando un intermediario
+      tags:
+      - MoneyConversions
+      parameters: []
+      responses:
+        '200':
+          description: Conversión exitosa
+        '400':
+          description: Parámetros inválidos
+        '422':
+          description: Conversión fallida
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin:
+                  type: string
+                destination:
+                  type: string
+                amount:
+                  type: number
+              required:
+              - origin
+              - destination
+              - amount
+servers:
+- url: http://{defaultHost}
+  variables:
+    defaultHost:
+      default: localhost:3000
