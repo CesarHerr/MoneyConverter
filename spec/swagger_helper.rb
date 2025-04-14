@@ -24,11 +24,11 @@ RSpec.configure do |config|
       paths: {},
       servers: [
         {
-          url: 'http://moneyconverter.onrender.com',
+          url: 'https://moneyconverter.onrender.com',
           description: 'Servidor en producción'
         },
         {
-          url: 'http://localhost:3000',
+          url: 'https://localhost:3000',
           description: 'Servidor local para desarrollo'
         }
       ]

@@ -121,7 +121,9 @@ Content-Type: application/json
 
 ## 🚀 Live Demo <a name="live-demo"></a>
 
-Se encuentra desplegado en render, lo puedes probar de 2 maneras
+Se encuentra desplegado en render, se encuentra en un servidor gratuito, este queda suspendido cuando no se usa, por lo que la primera vez puede tardar hasta 50 segundos en responder, luego ya responde con fluidez.
+
+El end point lo puedes probar de 2 maneras
 
 - usando postman , el end point es https://moneyconverter.onrender.com/api/v1/money_conversions
 
