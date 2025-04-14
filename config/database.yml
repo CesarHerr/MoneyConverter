@@ -80,6 +80,4 @@ test:
 #
 production:
   <<: *default
-  database: money_converter_production
-  username: money_converter
-  password: <%= ENV["MONEY_CONVERTER_DATABASE_PASSWORD"] %>
+  url: <%= ENV['DATABASE_URL'] %>
