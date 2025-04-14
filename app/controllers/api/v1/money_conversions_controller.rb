@@ -1,71 +1,133 @@
-class Api::V1::MoneyConversionsController < ApplicationController
-  require "net/http"
-  require "json"
+# frozen_string_literal: true
 
-  # POST /api/v1/money_conversions
-  # This action receives the parameters for the conversion and processes them
-  def create
-    Rails.logger.info "Params recibidos: #{params.inspect}"
-    # Criptocurrencies to be used as intermediaries for conversion
-    intermediaries = [ "BTC", "ETH", "LTC" ]
+module Api
+  module V1
+    # This controller handles money conversion requests.
+    # It interacts with the ApiBudaService to fetch market data and uses
+    # the OrderBookService to calculate the best conversion rates.
+    class MoneyConversionsController < ApplicationController
+      require 'net/http'
+      require 'json'
 
-    best_conversion = search_intermediaries (intermediaries)
+      # This action handles the conversion of money from one currency to another.
+      def create
+        return render json: { error: 'Parámetros inválidos' }, status: :bad_request if invalid_params?
 
-    get_response(best_conversion)
-  end
+        log_info('MoneyConversions#create', "Params recibidos: #{create_params.to_h}")
 
-  private
+        market_ids = fetch_market_ids
+        return render_conversion_error if market_ids.blank?
 
-  # This method is used to search for the best conversion using intermediaries
-  def search_intermediaries(intermediaries, best_conversion = nil)
-    origin = create_params[:origin]
-    destination = create_params[:destination]
-    amount = create_params[:amount].to_f
+        intermediaries = find_intermediaries(market_ids)
+        return render_conversion_error if intermediaries.blank?
 
-    Rails.logger.info "Inicio de busqueda mejor conversión para /n
-                    Moneda origen: #{origin} a Moneda destino: #{destination} con monto: #{amount}"
-    intermediaries.each do |crypto|
-      # Fetch the price of the origin currency
-      buy_price = BudaPriceService.fetch_last_price("#{crypto}-#{origin}")
-      next unless buy_price
+        best_conversion = find_best_conversion(intermediaries)
 
-      crypto_amount = amount / buy_price
-
-      # Fetch the price of the destination currency
-      sell_price = BudaPriceService.fetch_last_price("#{crypto}-#{destination}")
-      next unless sell_price
-
-      final_amount = crypto_amount * sell_price
-
-      # Check if the conversion is profitable
-      # If it's the first conversion or if the final amount is greater than the best conversion
-      if best_conversion.nil? || final_amount > best_conversion[:amount]
-        best_conversion = {
-          amount: final_amount,
-          intermediary: crypto
-        }
-        Rails.logger.info "Se ha encontrado mejor conversion : #{best_conversion}"
+        render_conversion_response(best_conversion)
+      rescue StandardError => e
+        log_error('MoneyConversions#create', e)
+        render_conversion_error
       end
 
-      best_conversion
-    end
-  end
+      private
 
-  # This method is used to render the response in JSON format
-  def get_response(best_conversion)
-    puts "best conversion: #{best_conversion}"
-    if best_conversion
-      render json: {
-        amount: best_conversion[:amount],
-        intermediary: best_conversion[:intermediary]
-      }
-    else
-      render json: { error: "No se pudo realizar la conversión" }, status: :unprocessable_entity
-    end
-  end
+      def invalid_params?
+        create_params[:origin].blank? || create_params[:destination].blank? || create_params[:amount].to_f <= 0
+      end
 
-  # Strong parameters to prevent mass assignment vulnerabilities
-  def create_params
-    params.permit(:origin, :destination, :amount)
+      # Fetches the market IDs from the Buda API.
+      def fetch_market_ids
+        ApiBudaService.fetch_markets_ids
+      rescue StandardError => e
+        log_error('MoneyConversions#fetch_market_ids', e)
+        nil
+      end
+
+      # fetch_market_ids fetches the market IDs from the Buda API.
+      def find_intermediaries(markets)
+        origin = create_params[:origin]
+        destination = create_params[:destination]
+
+        markets.select { |market| market.include?(origin) || market.include?(destination) }
+               .filter_map do |market|
+                 market.split('-').detect { |currency| currency != origin && currency != destination }
+               end.uniq
+      end
+
+      def find_best_conversion(intermediaries)
+        origin = create_params[:origin]
+        destination = create_params[:destination]
+        amount = create_params[:amount].to_f
+        best_conversion = nil
+
+        log_info('MoneyConversions#find_best_conversion',
+                 "Buscando mejor conversión de #{origin} a #{destination} con #{amount}")
+
+        intermediaries.each do |intermediary|
+          intermediate_amount = simulate_conversion_step("#{intermediary}-#{origin}", amount, :asks, true)
+          next unless intermediate_amount[:complete]
+
+          final_amount = simulate_conversion_step("#{intermediary}-#{destination}", intermediate_amount[:total_cost],
+                                                  :bids, false)
+          next unless final_amount[:complete]
+
+          log_info('MoneyConversions#find_best_conversion',
+                   "Intermediario: #{intermediary}, Monto final: #{final_amount[:total_cost]}")
+
+          next unless best_conversion.nil? || final_amount[:total_cost] > best_conversion[:amount]
+
+          best_conversion = {
+            amount: final_amount[:total_cost],
+            intermediary: intermediary
+          }
+          log_info('MoneyConversions#find_best_conversion', "Nueva mejor conversión encontrada: #{best_conversion}")
+        end
+
+        best_conversion
+      rescue StandardError => e
+        log_error('MoneyConversions#find_best_conversion', e)
+        nil
+      end
+
+      def simulate_conversion_step(market_id, amount, order_type, reverse)
+        order_book = ApiBudaService.order_book(market_id)
+        return {} if order_book.blank?
+
+        OrderBookService.calculate_max_amount(
+          order_book[order_type.to_s],
+          amount,
+          market_id,
+          reverse
+        )
+      rescue StandardError => e
+        log_error("MoneyConversions#simulate_conversion_step:#{market_id}", e)
+        {}
+      end
+
+      def render_conversion_response(best_conversion)
+        if best_conversion.present?
+          render json: best_conversion, status: :ok
+        else
+          render_conversion_error
+        end
+      end
+
+      def render_conversion_error
+        render json: { error: 'No se pudo realizar la conversión' }, status: :unprocessable_entity
+      end
+
+      def create_params
+        params.permit(:origin, :destination, :amount)
+      end
+
+      def log_info(context, message)
+        Rails.logger.info "[#{context}] #{message}"
+      end
+
+      def log_error(context, error)
+        Rails.logger.error "[#{context}] Error: #{error.message}"
+        Rails.logger.error error.backtrace.join("\n")
+      end
+    end
   end
 end
