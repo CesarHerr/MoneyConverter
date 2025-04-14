@@ -90,6 +90,8 @@ Content-Type: application/json
 
 - RSpec
 
+- Swagger
+
 ### Tech Stack <a name="tech-stack"></a>
 
 <details>
@@ -119,7 +121,18 @@ Content-Type: application/json
 
 ## 🚀 Live Demo <a name="live-demo"></a>
 
-Actualmente no hay demo en línea disponible.
+Se encuentra desplegado en render, lo puedes probar de 2 maneras
+
+- usando postman , el end point es https://moneyconverter.onrender.com/api/v1/money_conversions
+
+![alt text](image.png)
+
+
+- usando la url -> https://moneyconverter.onrender.com/api-docs/index.html  se encuentra documentación creada con Swagger, se puede probar directamente el end-pint.
+
+
+
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -167,11 +180,10 @@ bundle exec rspec
 
 ### Deployment
 
-Puedes desplegar usando:
 
 - [Render](https://render.com)
-- [Heroku](https://heroku.com)
-- Docker
+
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
