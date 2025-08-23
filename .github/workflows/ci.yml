@@ -52,4 +52,4 @@ jobs:
             -Dsonar.projectKey=TU_PROYECTO
             -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_2 }}
