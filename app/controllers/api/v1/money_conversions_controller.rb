@@ -54,7 +54,7 @@ module Api
                end.uniq
       end
 
-      def find_best_conversion(intermediaries)
+      def find_best_conversion(intermediaries) # rubocop:disable Metrics/AbcSize
         origin = create_params[:origin]
         destination = create_params[:destination]
         amount = create_params[:amount].to_f
