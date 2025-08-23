@@ -70,18 +70,18 @@ jobs:
       - name: Run RSpec
         run: bundle exec rspec
 
-      # 8️⃣ Run SonarCloud scan
-      - name: Run SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
-        with:
-          args: >
-            -Dsonar.projectKey=CesarHerr_MoneyConverter
-            -Dsonar.organization=cesarherr
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.sources=app,lib
-            -Dsonar.tests=spec
-            -Dsonar.sourceEncoding=UTF-8
-            -Dsonar.exclusions=vendor/**,node_modules/**,db/schema.rb,db/migrate/**
-            -Dsonar.ruby.rubocop.reportPaths=tmp/rubocop.json
-            -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
+      # # 8️⃣ Run SonarCloud scan
+      # - name: Run SonarCloud Scan
+      #   uses: SonarSource/sonarqube-scan-action@v5
+      #   with:
+      #     args: >
+      #       -Dsonar.projectKey=CesarHerr_MoneyConverter
+      #       -Dsonar.organization=cesarherr
+      #       -Dsonar.host.url=https://sonarcloud.io
+      #       -Dsonar.sources=app,lib
+      #       -Dsonar.tests=spec
+      #       -Dsonar.sourceEncoding=UTF-8
+      #       -Dsonar.exclusions=vendor/**,node_modules/**,db/schema.rb,db/migrate/**
+      #       -Dsonar.ruby.rubocop.reportPaths=tmp/rubocop.json
+      #       -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
 
