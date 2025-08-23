@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: money_converter_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      PGUSER: postgres
+      PGPASSWORD: password
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Ruby
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2 # o tu versión
+          bundler-cache: true
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      # 4️⃣ Install Node (si usas webpacker o js)
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # 5️⃣ Prepare database
+      - name: Setup Database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      # 6️⃣ Run RuboCop
+      - name: RuboCop
+        run: |
+          bundle exec rubocop -f json -o tmp/rubocop.json || true
+
+      # 7️⃣ Run RSpec with coverage
+      - name: Run RSpec
+        run: bundle exec rspec
+
+      # Cachear archivos de SonarQube (para acelerar análisis)
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # 8️⃣ Run SonarCloud scan
+      - name: Run SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          args: >
+            -Dsonar.projectKey=CesarHerr_MoneyConverter
+            -Dsonar.organization=cesarherr
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.sources=app,lib
+            -Dsonar.tests=spec
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.exclusions=vendor/**,node_modules/**,db/schema.rb,db/migrate/**
+            -Dsonar.ruby.rubocop.reportPaths=tmp/rubocop.json
+            -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml_
+
