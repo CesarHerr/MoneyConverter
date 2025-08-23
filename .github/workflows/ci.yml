@@ -36,7 +36,7 @@ jobs:
     steps:
       # 1️⃣ Checkout repo
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       # 2️⃣ Set up Ruby
       - name: Setup Ruby
