@@ -37,11 +37,12 @@ jobs:
 
       - name: Setup DB
         run: |
-          bin/rails db:create
-          bin/rails db:schema:load
+          RAILS_ENV=test bin/rails db:create db:schema:load
 
-      - name: Run RSpec
+      - name: Run RSpec with coverage
         run: bundle exec rspec
+        env:
+          RAILS_ENV: test
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -49,5 +50,6 @@ jobs:
           args: >
             -Dsonar.organization=TU_ORGANIZACION
             -Dsonar.projectKey=TU_PROYECTO
+            -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
