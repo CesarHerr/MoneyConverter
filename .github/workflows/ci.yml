@@ -58,7 +58,6 @@ jobs:
       # 5️⃣ Prepare database
       - name: Setup Database
         run: |
-          cp config/database.yml.ci config/database.yml   # si tienes uno específico para CI
           bundle exec rails db:create
           bundle exec rails db:schema:load
 
