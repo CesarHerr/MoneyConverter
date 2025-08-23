@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -12,44 +14,71 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
-        ports: ['5432:5432']
+        image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: money_converter_test
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-    steps:
-      - uses: actions/checkout@v3
+    env:
+      RAILS_ENV: test
+      PGUSER: postgres
+      PGPASSWORD: password
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_2 }}
 
-      - name: Set up Ruby
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Ruby
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3
+          ruby-version: 3.2 # o tu versión
           bundler-cache: true
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
-        run: bundle install
+        run: bundle install --jobs 4 --retry 3
 
-      - name: Setup DB
-        run: |
-          RAILS_ENV=test bin/rails db:create db:schema:load
-
-      - name: Run RSpec with coverage
-        run: bundle exec rspec
-        env:
-          RAILS_ENV: test
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+      # 4️⃣ Install Node (si usas webpacker o js)
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          args: >
-            -Dsonar.organization=TU_ORGANIZACION
-            -Dsonar.projectKey=TU_PROYECTO
-            -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_2 }}
+          node-version: '20'
+
+      # 5️⃣ Prepare database
+      - name: Setup Database
+        run: |
+          cp config/database.yml.ci config/database.yml   # si tienes uno específico para CI
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      # 6️⃣ Run RuboCop
+      - name: RuboCop
+        run: |
+          bundle exec rubocop -f json -o tmp/rubocop.json || true
+
+      # 7️⃣ Run RSpec with coverage
+      - name: Run RSpec
+        run: bundle exec rspec
+
+      # 8️⃣ Run SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        with:
+          projectKey: CesarHerr_MoneyConverter
+          organization: cesarherr
+          projectBaseDir: .
+          extraProperties: |
+            sonar.ruby.rubocop.reportPaths=tmp/rubocop.json
+            sonar.ruby.coverage.reportPaths=coverage/coverage.xml
+
