@@ -83,5 +83,5 @@ jobs:
       #       -Dsonar.sourceEncoding=UTF-8
       #       -Dsonar.exclusions=vendor/**,node_modules/**,db/schema.rb,db/migrate/**
       #       -Dsonar.ruby.rubocop.reportPaths=tmp/rubocop.json
-      #       -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml
+      #       -Dsonar.ruby.coverage.reportPaths=coverage/coverage.xml_
 
