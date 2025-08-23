@@ -31,7 +31,7 @@ jobs:
       RAILS_ENV: test
       PGUSER: postgres
       PGPASSWORD: password
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_2 }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
       # 1️⃣ Checkout repo
