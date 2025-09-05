@@ -51,7 +51,7 @@ jobs:
 
       # 4️⃣ Install Node (si usas webpacker o js)
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
